@@ -1,12 +1,14 @@
 // Prisma schema لنظام إدارة العملاء والعقود والفواتير (نسخة ويب)
 // مطابقة لنسخة Desktop - عربي RTL - شركة واحدة 10-20 موظف
+// يدعم PostgreSQL (Supabase) و SQLite للتطوير المحلي
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  // يدعم "postgresql" (Supabase/Vercel) أو "sqlite" (محلي)
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
