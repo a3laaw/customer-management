@@ -1,0 +1,92 @@
+// Prisma schema لنظام إدارة العملاء والعقود والفواتير (نسخة ويب)
+// مطابقة لنسخة Desktop - عربي RTL - شركة واحدة 10-20 موظف
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============= المستخدمون والصلاحيات =============
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  name         String
+  password     String // bcrypt hash
+  role         String   @default("user") // "admin" | "manager" | "user"
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ============= العملاء =============
+model Customer {
+  id           String   @id @default(cuid())
+  customerCode String   @unique // CUST-0001
+  name         String
+  phone        String   @default("")
+  address      String   @default("")
+  email        String   @default("")
+  notes        String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  contracts Contract[]
+  invoices  Invoice[]
+
+  @@index([name])
+  @@index([phone])
+}
+
+// ============= العقود =============
+model Contract {
+  id             String   @id @default(cuid())
+  contractNumber String   @unique // CON-0001
+  customerId     String
+  contractDate   String // YYYY-MM-DD
+  description    String   @default("")
+  amount         Float // قيمة العقد
+  notes          String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  invoices Invoice[]
+
+  @@index([customerId])
+}
+
+// ============= الفواتير =============
+model Invoice {
+  id           String   @id @default(cuid())
+  invoiceNumber String   @unique // INV-0001
+  customerId   String
+  contractId   String
+  invoiceDate  String // YYYY-MM-DD
+  description  String   @default("")
+  amount       Float // CHECK (amount > 0) في طبقة التطبيق
+  notes        String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Restrict)
+
+  @@index([customerId])
+  @@index([contractId])
+}
+
+// ============= إعدادات النظام (صف واحد) =============
+model Settings {
+  id            String  @id @default("1")
+  companyName   String  @default("")
+  companyAddress String @default("")
+  companyPhone  String  @default("")
+  companyEmail  String  @default("")
+  logoPath      String  @default("")
+  currency      String  @default("د.ك")
+  uiTheme       String  @default("light") // "light" | "dark"
+}
