@@ -1,8 +1,16 @@
 'use client'
 
-import { SessionProvider } from 'next-auth/react'
+import dynamic from 'next/dynamic'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
+
+// تحميل SessionProvider بشكل ديناميكي (lazy)
+// هذا يفادي خطأ ERR_INVALID_URL في Vercel build عند توليد صفحات static
+// لأن next-auth يحاول استخدام NEXTAUTH_URL عند الاستيراد المباشر
+const SessionProvider = dynamic(
+  () => import('next-auth/react').then((m) => m.SessionProvider),
+  { ssr: false }
+) as React.ComponentType<{ children: React.ReactNode }>
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
