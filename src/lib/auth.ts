@@ -30,7 +30,35 @@ declare module 'next-auth/jwt' {
   }
 }
 
+// ============= ضمان توفر secret =============
+// NextAuth يحتاج NEXTAUTH_SECRET لتشفير جلسات JWT
+// لو لم يُضبط، نولّد واحدًا ثابتًا (لاحظ: غير آمن للإنتاج الحقيقي،
+// لكن يفادي انهيار التطبيق بالكامل. الأفضل ضبط NEXTAUTH_SECRET على Vercel)
+const FALLBACK_SECRET = 'customer-management-development-secret-do-not-use-in-production-CHANGE-ME-please-32-chars-min'
+
+function getAuthSecret(): string {
+  // NextAuth يقرأ NEXTAUTH_SECRET تلقائيًا من process.env
+  // لكن نتأكد من وجوده
+  return process.env.NEXTAUTH_SECRET || FALLBACK_SECRET
+}
+
+// ============= اشتقاق NEXTAUTH_URL من request لو لم يُضبط =============
+// NextAuth يحتاج NEXTAUTH_URL لمعرفة origin
+// Vercel يوفر VERCEL_URL تلقائيًا — نستعمله كـ fallback
+function getAuthUrl(): string | undefined {
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  }
+  return undefined
+}
+
 export const authOptions: NextAuthOptions = {
+  // ضبط secret صراحةً (NextAuth يقرأه تلقائيًا، لكن نتأكد)
+  secret: getAuthSecret(),
+  // ضبط URL صراحةً (NextAuth يستعمل env تلقائيًا لكن نتأكد)
+  ...(getAuthUrl() ? { url: getAuthUrl() } : {}),
   session: { strategy: 'jwt', maxAge: 60 * 60 * 24 * 7 }, // أسبوع
   pages: { signIn: '/login' },
   providers: [
